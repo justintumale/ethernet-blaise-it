@@ -29,7 +29,7 @@ class CSMA_CD_Simulator:
     S2 = station(2)
     S3 = station(3)
     S4 = station(4)
-
+    '''
     #Create sample simulated events
     event1 = Event.Event(time.time(), S1.stationId, "Hello simulator.")
 
@@ -42,7 +42,7 @@ class CSMA_CD_Simulator:
     print(event_test.time)
     print(event_test.stationId)
     print(event_test.msg)
-
+    '''
 
     def __init__(self):
         '''
@@ -51,6 +51,14 @@ class CSMA_CD_Simulator:
         :return:
         '''
         pass
+
+    def create_event(self, time, stationId, msg):
+        event = Event.Event(time, stationId, msg)
+        self.EventQueue.put(event)
+        return True
+
+    def get_events(self):
+        return self.EventQueue
 
     def detect_collision_time1(self, transmit_event1, transmit_event2):
         '''
