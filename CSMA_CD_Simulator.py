@@ -1,7 +1,49 @@
+import queue
+import Event
+import time
 class CSMA_CD_Simulator:
+
     '''
     Discrete event simulation of a CSMA/CD network
     '''
+
+    #TODO createEventQueue
+    #TODO haveAStationTransmitAFrame
+    #TODO haveAStationReceiveAFrame
+    #TODO calculateIfClearToSend
+        #TODO handleTransmissionAttempts
+    #TODO updateEventQueue
+
+    #TODO calculateCurrentPositionOfSignal ---> speed *
+
+    #Create Event Queue
+    EventQueue = queue.Queue()
+
+    #Create Stations
+    class station:
+        stationId = 0
+        def __init__(self, stationId):
+            self.stationId = stationId
+
+    S1 = station(1)
+    S2 = station(2)
+    S3 = station(3)
+    S4 = station(4)
+
+    #Create sample simulated events
+    event1 = Event.Event(time.time(), S1.stationId, "Hello simulator.")
+
+    #add event to EventQueue
+    EventQueue.put(event1)
+
+    #Test event queue
+    print('Testing . . . . . .')
+    event_test = EventQueue.get()
+    print(event_test.time)
+    print(event_test.stationId)
+    print(event_test.msg)
+
+
     def __init__(self):
         '''
         load the simulator with the given list of ARRIVAL events,

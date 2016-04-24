@@ -9,16 +9,22 @@ class Event:
     '''
     Represents an event in a CSMA_CD network
     '''
-    def __init__(self, time, stationID, msg):
+    time = ''
+    stationId = 0
+    msg = ''
+    def __init__(self, time, stationId, msg):
         '''
         Creates an Event with specified event time, station, and associated message
         :param time:
-        :param stationID:
+        :param stationId:
         :param msg:
         :return:
         '''
-        pass
-    
+
+        self.time = time
+        self.stationId = stationId
+        self.msg = msg
+
     ARRIVAL = 1
     COLLISION_DETECT = 5
     JAMMING_END = 6
