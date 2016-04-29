@@ -1,6 +1,9 @@
-import queue
+import queue, Station
 import Event
 import time
+import sys
+import Frame
+
 class CSMA_CD_Simulator:
 
     '''
@@ -16,101 +19,116 @@ class CSMA_CD_Simulator:
 
     #TODO calculateCurrentPositionOfSignal ---> speed *
 
-    #Create Event Queue
-    EventQueue = queue.Queue()
+    evtQ = queue.Queue()
+    q_size = 0
+    distance = 0
+    stations = []
+    simTime = 0
+    positionToStation = {}
+    idToStation = {}
+    last_event = Event.Event(None, None, None, None)
 
-    #Create Stations
-    class station:
-        stationId = 0
-        def __init__(self, stationId):
-            self.stationId = stationId
+   # def __init__(self, arrivalEvents):
+        #'''
+        #load the simulator with the given list of ARRIVAL events,
+        #and initialize the list of in-progress transmission events'
+        #:return:
+        #'''
+     #   pass
 
-    S1 = station(1)
-    S2 = station(2)
-    S3 = station(3)
-    S4 = station(4)
-    '''
-    #Create sample simulated events
-    event1 = Event.Event(time.time(), S1.stationId, "Hello simulator.")
 
-    #add event to EventQueue
-    EventQueue.put(event1)
-
-    #Test event queue
-    print('Testing . . . . . .')
-    event_test = EventQueue.get()
-    print(event_test.time)
-    print(event_test.stationId)
-    print(event_test.msg)
-    '''
-
-    def __init__(self):
+    def __init__(self, distance):
         '''
         load the simulator with the given list of ARRIVAL events,
         and initialize the list of in-progress transmission events'
         :return:
         '''
-        pass
+        self.distance = distance
+        self.simTime = 0
+        self.evtQ = queue.Queue()
 
-    def create_event(self, time, stationId, msg):
-        event = Event.Event(time, stationId, msg)
-        self.EventQueue.put(event)
-        return True
-
-    def get_events(self):
-        return self.EventQueue
-
-    def detect_collision_time1(self, transmit_event1, transmit_event2):
+    def addEvent(self, evt):
         '''
-        Returns the expected time of the COLLISION_DETECT event
-        at station 1 resulting from the two transmission events, where
-        transmit_event1 is the transmission from station 1 and transmit_event2
-        is the transmission from station 2
-        :param transmit_event1:
-        :param transmit_event2:
-        :return:
+        Add the event to self.evtQ, maintaining the event queue in
+        order of increasing event time
         '''
-        pass
+        self.evtQ.put(evt)
+        self.q_size += 1
 
-    def detect_collision_time2(self, transmit_event1, transmit_event2):
+    def addStation(self, station):
+        self.stations.append(station)
+        self.positionToStation[station.position] = station
+        self.idToStation[station.stationNum] = station
+
+
+    def cancelCompletion(self, messageID):
         '''
-        Returns the expected time of the COLLISION_DETECT event
-        at station 2 resulting from the two transmission events, where
-        transmit_event1 is the transmission from station 1 and transmit_event2
-        is the transmission from station 2
-        :param transmit_event1:
-        :param transmit_event2:
-        :return:
+        Cancel both the TRANSMIT_COMPLETE and RECEPTION_COMPLETE
+        events associated with message _messageID_
         '''
         pass
 
-    def receive_completion_time(self, transmit_event):
+
+    def media_busy(self, position, simTime):
         '''
-        Returns the expected time of the RECEPTION_COMPLETE event
-        marking the end of the reception of transmit_event
-        :param transmit_event:
-        :return:
+        Return True if a current or recently-completed transmission
+        is detected at _position_ at simulation time _simTime_
         '''
-        pass
+        sender_station_id = self.last_event.stationId
+        sender_station = self.idToStation[sender_station_id]
+        distance = abs(sender_station.position - position)
+        sender_event_time = self.last_event.time
+        propagation_delay = distance / 200
+
+        #packet_size = sys.getsizeof(self.last_event.msg) + 26
+        packet_size = len(self.last_event.msg.message) + 26
+
+        transmission_delay = (packet_size * 8)/100
+
+        if simTime < (sender_event_time + propagation_delay) or simTime > (sender_event_time + propagation_delay + transmission_delay ):
+            return False
+
+        else:
+            return True
+
+
+    def processSingleEvent(self):
+        '''
+        Process the first event in the event queue,
+        possibly changing state, scheduling new events, or
+        cancelling future events
+        '''
+        print('q size', self.evtQ._qsize())
+        event = self.evtQ.get()
+        self.q_size -= 1
+        print('q size', self.evtQ._qsize())
+        print('event details', event.eventType)
+
+
+        self.simTime = event.time
+        self.last_event = event
+        print("last event event type" , event.eventType)
+        if event.eventType == 1:
+            print('EVENT MATCH !!')
+            msg1 = Frame.Frame(2,'Hello Station 2',1,2)
+            next_event = Event.Event(Event.Event.TRANSMIT_COMPLETE,126.73, 1, msg1)
+            self.evtQ.put(next_event)
+            print('new q size', self.evtQ._qsize())
+            self.q_size += 1
+
+            msg2 = Frame.Frame(3,'Hello Station 2',1,2)
+            next_event2 = Event.Event(Event.Event.RECEPTION_COMPLETE, 126.73, 1, msg2)
+            self.evtQ.put(next_event2)
+            self.q_size += 1
+            print('new q size 2', self.evtQ._qsize())
+
+            print('QUEUE SIZE', self.evtQ._qsize())
 
     def run(self):
         '''
-        Process all the events, possibly changing state at each event
-        :return:
+        Process all the events in the event queue,
+        possibly changing state, scheduling new events, or
+        cancelling future events at each event
         '''
         pass
-
-    def transmit_completion_time(self, transmit_event):
-        '''
-        Returns the expected time of the TRANSMIT_COMPLETE event marking the end of transmission
-        of transmit_event
-        :param transmit_event:
-        :return:
-        '''
-        pass
-
-
-
-
-
 
