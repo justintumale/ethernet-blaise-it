@@ -30,7 +30,6 @@ class Event:
         self.stationId = stationId
         self.msg = msg
         #self.eventType = eventType
-        print("EVENT...", eventType_)
 
         if eventType_ == 1:
             self.eventType = 1

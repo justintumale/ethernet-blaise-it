@@ -98,31 +98,39 @@ class CSMA_CD_Simulator:
         possibly changing state, scheduling new events, or
         cancelling future events
         '''
-        print('q size', self.evtQ._qsize())
         event = self.evtQ.get()
         self.q_size -= 1
-        print('q size', self.evtQ._qsize())
-        print('event details', event.eventType)
 
 
         self.simTime = event.time
         self.last_event = event
-        print("last event event type" , event.eventType)
         if event.eventType == 1:
-            print('EVENT MATCH !!')
+
+            #frame (frameNo, message, senderId, destId)
+            #event ( eventType_, time, stationId, msg):
+
+            #the transmission complete = arrival time + transmission delay
+                #transmission delay = (packet size * 8) / bitrate (100)
+
+            transmission_delay = (41*8)/100
+            transmission_complete_time = event.time + transmission_delay
+
             msg1 = Frame.Frame(2,'Hello Station 2',1,2)
-            next_event = Event.Event(Event.Event.TRANSMIT_COMPLETE,126.73, 1, msg1)
+            next_event = Event.Event(Event.Event.TRANSMIT_COMPLETE, transmission_complete_time, 1, msg1)
             self.evtQ.put(next_event)
-            print('new q size', self.evtQ._qsize())
             self.q_size += 1
 
+            #reception complete = arrival time + transmission delay + propagation delay
+                #transmission delay = (packet size * 8) / bitrate (100 bits per microsecond)
+                #propagation delay = (locationReceiver - locationSender) / propagation speed (600 meters per microsecond
+            # )
+            distance_between_stations = abs(self.idToStation[event.msg.senderId].position - self.idToStation[event.msg.destId].position)
+            reception_complete_time = event.time + transmission_delay +  distance_between_stations
             msg2 = Frame.Frame(3,'Hello Station 2',1,2)
-            next_event2 = Event.Event(Event.Event.RECEPTION_COMPLETE, 126.73, 1, msg2)
+            next_event2 = Event.Event(Event.Event.RECEPTION_COMPLETE, reception_complete_time, 1, msg2)
             self.evtQ.put(next_event2)
             self.q_size += 1
-            print('new q size 2', self.evtQ._qsize())
 
-            print('QUEUE SIZE', self.evtQ._qsize())
 
     def run(self):
         '''

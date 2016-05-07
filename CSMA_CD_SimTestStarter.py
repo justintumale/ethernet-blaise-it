@@ -53,8 +53,6 @@ class CSMA_CD_SimulatorTest(unittest.TestCase):
 
         #evt2 = evtQ[0]
         evt2 = evtQ.get()
-        print("TC" , Event.TRANSMIT_COMPLETE)
-        print("Ev2 details", evt2.stationId)
         self.assertEquals(evt2.eventType,Event.TRANSMIT_COMPLETE)
         self.assertAlmostEquals(evt2.time,126.73)
         self.assertEquals(evt2.stationId,1)
