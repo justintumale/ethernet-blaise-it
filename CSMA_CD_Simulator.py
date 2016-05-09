@@ -12,15 +12,6 @@ class CSMA_CD_Simulator:
     Discrete event simulation of a CSMA/CD network
     '''
 
-    #TODO createEventQueue
-    #TODO haveAStationTransmitAFrame
-    #TODO haveAStationReceiveAFrame
-    #TODO calculateIfClearToSend
-        #TODO handleTransmissionAttempts
-    #TODO updateEventQueue
-
-    #TODO calculateCurrentPositionOfSignal ---> speed *
-
     evtQ = ''
     q_size = 0
     distance = 0
@@ -30,14 +21,7 @@ class CSMA_CD_Simulator:
     idToStation = {}
     last_event = Event.Event(None, None, None, None)
     list_of_transmissions = []
-
-   # def __init__(self, arrivalEvents):
-        #'''
-        #load the simulator with the given list of ARRIVAL events,
-        #and initialize the list of in-progress transmission events'
-        #:return:
-        #'''
-     #   pass
+    back_off_time = random.uniform(.01, .98)
 
 
     def __init__(self, distance):
@@ -51,6 +35,9 @@ class CSMA_CD_Simulator:
         self.evtQ = queue.Queue()
         self.list_of_transmissions.clear()
 
+    def set_back_off_time(self, custom_time):
+        self.back_off_time = custom_time
+
     def addEvent(self, evt):
         '''
         Add the event to self.evtQ, maintaining the event queue in
@@ -58,6 +45,7 @@ class CSMA_CD_Simulator:
         '''
         self.evtQ.put(evt)
         self.q_size += 1
+        self.set_back_off_time(random.uniform(.01, .98))
 
     def addStation(self, station):
         self.stations.append(station)
@@ -108,7 +96,7 @@ class CSMA_CD_Simulator:
         self.last_event = event
 
         #ARRIVAL EVENTS###########################################################################
-        if event.eventType == 1:
+        if event.eventType == 1 or event.eventType == 2:
 
             #frame (frameNo, message, senderId, destId)
             #event ( eventType_, time, stationId, msg):
@@ -118,7 +106,6 @@ class CSMA_CD_Simulator:
 
                 #IF THERE IS AN ONGOING TRANSMISSION
                 if len(self.list_of_transmissions) > 0:
-                    print('HERE?')
                     self.list_of_transmissions.clear()
                     event_ = self.evtQ.get()
 
@@ -169,19 +156,14 @@ class CSMA_CD_Simulator:
             #IF MEDIA IS BUSY
             else:
                 re_msg = Frame.Frame(event.msg.frameNo,event.msg.message, event.msg.senderId, event.msg.destId)
-                ran_num = random.uniform(.01, .98)
+
                 if (self.last_event == None):
-                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, event.time + ran_num, event.stationId, re_msg)
+                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, event.time + self.back_off_time, event.stationId, re_msg)
                     self.evtQ.put(re_evt)
                 else:
-                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, self.last_event.time + ran_num, event.stationId, re_msg)
+                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, self.last_event.time + self.back_off_time, event.stationId, re_msg)
                     self.evtQ.put(re_evt)
 
-
-
-        #TRANSMISSION ATTEMPT###########################################################################
-        if event.eventType == 2:
-            pass
 
         #TRANSMISSION COMPLETE###########################################################################
         if event.eventType == 3:
