@@ -27,6 +27,7 @@ class CSMA_CD_Simulator:
     positionToStation = {}
     idToStation = {}
     last_event = Event.Event(None, None, None, None)
+    list_of_transmissions = []
 
    # def __init__(self, arrivalEvents):
         #'''
@@ -100,36 +101,61 @@ class CSMA_CD_Simulator:
         '''
         event = self.evtQ.get()
         self.q_size -= 1
-
-
         self.simTime = event.time
         self.last_event = event
+
+        #ARRIVAL EVENTS###########################################################################
         if event.eventType == 1:
 
             #frame (frameNo, message, senderId, destId)
             #event ( eventType_, time, stationId, msg):
+            #IF MEDIA IS NOT BUSY
+            if self.media_busy(event.stationId, event.time) == False:
 
-            #the transmission complete = arrival time + transmission delay
-                #transmission delay = (packet size * 8) / bitrate (100)
+                #IF THERE IS AN ONGOING TRANSMISSION
+                if len(self.list_of_transmissions) != 0:
+                    #schedule collision 1
+                    #schedule collision 2
 
-            transmission_delay = (41*8)/100
-            transmission_complete_time = event.time + transmission_delay
 
-            msg1 = Frame.Frame(2,'Hello Station 2',1,2)
-            next_event = Event.Event(Event.Event.TRANSMIT_COMPLETE, transmission_complete_time, 1, msg1)
-            self.evtQ.put(next_event)
-            self.q_size += 1
+                #IF THERE IS NOT AN ONGOING TRANSMISSION
+                elif (self.media_busy(event.stationId, event.time) == False) and len(self.list_of_transmissions) == 0:
+                                                        #the transmission complete = arrival time + transmission delay
+                                                        #transmission delay = (packet size * 8) / bitrate (100)
 
-            #reception complete = arrival time + transmission delay + propagation delay
-                #transmission delay = (packet size * 8) / bitrate (100 bits per microsecond)
-                #propagation delay = (locationReceiver - locationSender) / propagation speed (600 meters per microsecond
-            # )
-            distance_between_stations = abs(self.idToStation[event.msg.senderId].position - self.idToStation[event.msg.destId].position)
-            reception_complete_time = event.time + transmission_delay +  distance_between_stations
-            msg2 = Frame.Frame(3,'Hello Station 2',1,2)
-            next_event2 = Event.Event(Event.Event.RECEPTION_COMPLETE, reception_complete_time, 1, msg2)
-            self.evtQ.put(next_event2)
-            self.q_size += 1
+                    transmission_delay = (41*8)/100
+                    transmission_complete_time = event.time + transmission_delay
+
+                    msg1 = Frame.Frame(2,'Hello Station 2',1,2)
+                    next_event = Event.Event(Event.Event.TRANSMIT_COMPLETE, transmission_complete_time, 1, msg1)
+                    self.evtQ.put(next_event)
+                    self.q_size += 1
+
+                    #reception complete = arrival time + transmission delay + propagation delay
+                        #transmission delay = (packet size * 8) / bitrate (100 bits per microsecond)
+                        #propagation delay = (locationReceiver - locationSender) / propagation speed (600 meters per microsecond
+                    # )
+                    distance_between_stations = abs(self.idToStation[event.msg.senderId].position - self.idToStation[event.msg.destId].position)
+                    reception_complete_time = event.time + transmission_delay +  distance_between_stations
+                    msg2 = Frame.Frame(3,'Hello Station 2',1,2)
+                    next_event2 = Event.Event(Event.Event.RECEPTION_COMPLETE, reception_complete_time, 1, msg2)
+                    self.evtQ.put(next_event2)
+                    self.q_size += 1
+
+            #IF MEDIA IS BUSY
+            else:
+                re_msg = Frame.Frame(event.msg.frameNo,event.msg.message, event.msg.senderId, event.msg.destId)
+                if (self.last_event == None):
+                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, event.time + 1, event.stationId, re_msg)
+                    self.evtQ.put(re_evt)
+                else:
+                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, self.last_event.time, event.stationId, re_msg)
+                    self.evtQ.put(re_evt)
+
+
+
+        #TRANSMISSION ATTEMPT###########################################################################
+        #TRANSMISSION COMPLETE###########################################################################
 
 
     def run(self):
