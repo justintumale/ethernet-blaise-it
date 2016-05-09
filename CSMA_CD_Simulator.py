@@ -36,6 +36,10 @@ class CSMA_CD_Simulator:
         self.list_of_transmissions.clear()
 
     def set_back_off_time(self, custom_time):
+        '''
+        Set a random back off time.
+        :param custom_time: the desired time
+        '''
         self.back_off_time = custom_time
 
     def addEvent(self, evt):
@@ -48,6 +52,10 @@ class CSMA_CD_Simulator:
         self.set_back_off_time(random.uniform(.01, .98))
 
     def addStation(self, station):
+        '''
+        Adds a station to the simulator
+        :param station: a station class
+        '''
         self.stations.append(station)
         self.positionToStation[station.position] = station
         self.idToStation[station.stationNum] = station
@@ -58,7 +66,10 @@ class CSMA_CD_Simulator:
         Cancel both the TRANSMIT_COMPLETE and RECEPTION_COMPLETE
         events associated with message _messageID_
         '''
-        pass
+        temp = ''
+        while (temp != 4):
+            temp_event = self.evtQ.get()
+            temp = temp_event.eventType
 
 
     def media_busy(self, position, simTime):
@@ -95,11 +106,8 @@ class CSMA_CD_Simulator:
         self.simTime = event.time
         self.last_event = event
 
-        #ARRIVAL EVENTS###########################################################################
+        #ARRIVAL EVENTS########################################################################################
         if event.eventType == 1 or event.eventType == 2:
-
-            #frame (frameNo, message, senderId, destId)
-            #event ( eventType_, time, stationId, msg):
 
             #IF MEDIA IS NOT BUSY
             if self.media_busy(event.stationId, event.time) == False:
@@ -126,18 +134,18 @@ class CSMA_CD_Simulator:
                                                         #the transmission complete = arrival time + transmission delay
                                                         #transmission delay = (packet size * 8) / bitrate (100)
 
+                    #calculate transmission delay
                     transmission_delay = (41*8)/100
+                    #calculate transmission complete time
                     transmission_complete_time = event.time + transmission_delay
 
+                    #put the transmit complete event into the queue
                     msg1 = Frame.Frame(2,'Hello Station 2',1,2)
                     next_event = Event.Event(Event.Event.TRANSMIT_COMPLETE, transmission_complete_time, 1, msg1)
                     self.evtQ.put(next_event)
                     self.q_size += 1
 
-                    #reception complete = arrival time + transmission delay + propagation delay
-                        #transmission delay = (packet size * 8) / bitrate (100 bits per microsecond)
-                        #propagation delay = (locationReceiver - locationSender) / propagation speed (600 meters per microsecond
-                    # )
+                    #put the reception complete event into the queue
                     distance_between_stations = abs(self.idToStation[event.msg.senderId].position - self.idToStation[event.msg.destId].position)
                     reception_complete_time = event.time + transmission_delay +  distance_between_stations
                     msg2 = Frame.Frame(3,'Hello Station 2',1,2)
@@ -145,16 +153,14 @@ class CSMA_CD_Simulator:
                     self.evtQ.put(next_event2)
                     self.q_size += 1
 
-
                     #create a new transmission
                     new_transmission = Transmission.Transmission(event.time,reception_complete_time ,1)
                     self.list_of_transmissions.append(new_transmission)
 
 
-
-
             #IF MEDIA IS BUSY
             else:
+                #if media is busy, retransmit with the backoff time
                 re_msg = Frame.Frame(event.msg.frameNo,event.msg.message, event.msg.senderId, event.msg.destId)
 
                 if (self.last_event == None):
@@ -168,7 +174,6 @@ class CSMA_CD_Simulator:
         #TRANSMISSION COMPLETE###########################################################################
         if event.eventType == 3:
             self.list_of_transmissions.clear()
-            print('trans complete')
 
         #COLLISION DETECT################################################################################
         if event.eventType == 5:
