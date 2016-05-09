@@ -3,6 +3,8 @@ import Event
 import time
 import sys
 import Frame
+import Transmission
+import random
 
 class CSMA_CD_Simulator:
 
@@ -19,7 +21,7 @@ class CSMA_CD_Simulator:
 
     #TODO calculateCurrentPositionOfSignal ---> speed *
 
-    evtQ = queue.Queue()
+    evtQ = ''
     q_size = 0
     distance = 0
     stations = []
@@ -47,6 +49,7 @@ class CSMA_CD_Simulator:
         self.distance = distance
         self.simTime = 0
         self.evtQ = queue.Queue()
+        self.list_of_transmissions.clear()
 
     def addEvent(self, evt):
         '''
@@ -109,17 +112,30 @@ class CSMA_CD_Simulator:
 
             #frame (frameNo, message, senderId, destId)
             #event ( eventType_, time, stationId, msg):
+
             #IF MEDIA IS NOT BUSY
             if self.media_busy(event.stationId, event.time) == False:
 
                 #IF THERE IS AN ONGOING TRANSMISSION
-                if len(self.list_of_transmissions) != 0:
-                    #schedule collision 1
-                    #schedule collision 2
+                if len(self.list_of_transmissions) > 0:
+                    print('HERE?')
+                    self.list_of_transmissions.clear()
+                    event_ = self.evtQ.get()
 
+                    #clear the reception complete and transmission complete from the queue
+                    while self.evtQ._qsize() != 0:
+                        self.evtQ.get()
+
+                    #schedule collision 1- from the current station
+                    colEvent1 = Event.Event(Event.Event.COLLISION_DETECT,event.time, event.stationId, event.msg)
+                    #schedule collision 2- from the ongoing transmission
+                    colEvent2 = Event.Event(Event.Event.COLLISION_DETECT,event_.time, event_.stationId, event_.msg)
+
+                    self.evtQ.put(colEvent1)
+                    self.evtQ.put(colEvent2)
 
                 #IF THERE IS NOT AN ONGOING TRANSMISSION
-                elif (self.media_busy(event.stationId, event.time) == False) and len(self.list_of_transmissions) == 0:
+                elif (self.media_busy(event.stationId, event.time) == False) and len(self.list_of_transmissions)== 0:
                                                         #the transmission complete = arrival time + transmission delay
                                                         #transmission delay = (packet size * 8) / bitrate (100)
 
@@ -142,21 +158,45 @@ class CSMA_CD_Simulator:
                     self.evtQ.put(next_event2)
                     self.q_size += 1
 
+
+                    #create a new transmission
+                    new_transmission = Transmission.Transmission(event.time,reception_complete_time ,1)
+                    self.list_of_transmissions.append(new_transmission)
+
+
+
+
             #IF MEDIA IS BUSY
             else:
                 re_msg = Frame.Frame(event.msg.frameNo,event.msg.message, event.msg.senderId, event.msg.destId)
+                ran_num = random.uniform(.01, .98)
                 if (self.last_event == None):
-                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, event.time + 1, event.stationId, re_msg)
+                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, event.time + ran_num, event.stationId, re_msg)
                     self.evtQ.put(re_evt)
                 else:
-                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, self.last_event.time, event.stationId, re_msg)
+                    re_evt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, self.last_event.time + ran_num, event.stationId, re_msg)
                     self.evtQ.put(re_evt)
 
 
 
         #TRANSMISSION ATTEMPT###########################################################################
-        #TRANSMISSION COMPLETE###########################################################################
+        if event.eventType == 2:
+            pass
 
+        #TRANSMISSION COMPLETE###########################################################################
+        if event.eventType == 3:
+            self.list_of_transmissions.clear()
+            print('trans complete')
+
+        #COLLISION DETECT################################################################################
+        if event.eventType == 5:
+            jam_event = Event.Event(Event.Event.JAMMING_END, event.time, event.stationId, event.msg)
+            self.evtQ.put(jam_event)
+
+        #JAMMING END################################################################################
+        if event.eventType == 6:
+            new_attempt = Event.Event(Event.Event.TRANSMIT_ATTEMPT, event.time, event.stationId, event.msg)
+            self.evtQ.put(new_attempt)
 
     def run(self):
         '''
